@@ -15,7 +15,8 @@ module Paperclip
         :default_url       => "/:attachment/:style/missing.png",
         :default_style     => :original,
         :storage           => :filesystem,
-        :whiny             => Paperclip.options[:whiny] || Paperclip.options[:whiny_thumbnails]
+        :whiny             => Paperclip.options[:whiny] || Paperclip.options[:whiny_thumbnails],
+        :preserve_files    => false
       }
     end
 
@@ -47,6 +48,7 @@ module Paperclip
       @queued_for_write  = {}
       @errors            = {}
       @dirty             = false
+      @preserve_files      = options[:preserve_files]
 
       initialize_storage
     end
@@ -158,8 +160,10 @@ module Paperclip
     # nil to the attachment *and saving*. This is permanent. If you wish to
     # wipe out the existing attachment but not save, use #clear.
     def destroy
-      clear
-      save
+      unless @preserve_files
+        clear
+        save        
+      end
     end
 
     # Returns the name of the file as originally assigned, and lives in the
@@ -313,7 +317,7 @@ module Paperclip
     end
 
     def queue_existing_for_delete #:nodoc:
-      return unless file?
+      return unless (file? && @preserve_files==false)
       @queued_for_delete += [:original, *styles.keys].uniq.map do |style|
         path(style) if exists?(style)
       end.compact
